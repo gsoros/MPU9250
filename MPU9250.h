@@ -70,6 +70,7 @@ struct MPU9250Setting {
     GYRO_DLPF_CFG gyro_dlpf_cfg{GYRO_DLPF_CFG::DLPF_41HZ};
     uint8_t accel_fchoice{0x01};
     ACCEL_DLPF_CFG accel_dlpf_cfg{ACCEL_DLPF_CFG::DLPF_45HZ};
+    bool skip_mag{false};  // set to true to ignore AK8963, e.g. if you are using MPU6500 only
 };
 
 template <typename WireType>
@@ -138,13 +139,15 @@ class MPU9250_ {
 
         if (isConnectedMPU9250()) {
             initMPU9250();
-            if (isConnectedAK8963())
+            if (!setting.skip_mag && isConnectedAK8963())
                 initAK8963();
             else {
-                if (b_verbose)
-                    Serial.println("Could not connect to AK8963");
-                has_connected = false;
-                return false;
+                if (!setting.skip_mag) {
+                    if (b_verbose)
+                        Serial.println("Could not connect to AK8963");
+                    has_connected = false;
+                    return false;
+                }
             }
         } else {
             if (b_verbose)
@@ -173,8 +176,7 @@ class MPU9250_ {
     }
 
     bool isConnected() {
-        has_connected = isConnectedMPU9250() && isConnectedAK8963();
-        return has_connected;
+        return isConnectedMPU9250() && (setting.skip_mag || (!setting.skip_mag && isConnectedAK8963()));
     }
 
     bool isConnectedMPU9250() {
@@ -510,6 +512,7 @@ class MPU9250_ {
     }
 
     void update_mag() {
+        if (setting.skip_mag) return;
         int16_t mag_count[3] = {0, 0, 0};  // Stores the 16-bit signed magnetometer sensor output
 
         // Read the x/y/z adc values
@@ -525,6 +528,7 @@ class MPU9250_ {
     }
 
     bool read_mag(int16_t* destination) {
+        if (setting.skip_mag) return false;
         const uint8_t st1 = read_byte(AK8963_ADDRESS, AK8963_ST1);
         if (st1 & 0x01) {                                                    // wait for magnetometer data ready bit to be set
             uint8_t raw_data[7];                                             // x/y/z gyro register data, ST2 register stored here, must read ST2 at end of data acquisition
@@ -704,6 +708,7 @@ class MPU9250_ {
 
     // mag calibration is executed in MAG_OUTPUT_BITS: 16BITS
     void calibrate_mag_impl() {
+        if (setting.skip_mag) return;
         // set MAG_OUTPUT_BITS to maximum to calibrate
         MAG_OUTPUT_BITS mag_output_bits_cache = setting.mag_output_bits;
         setting.mag_output_bits = MAG_OUTPUT_BITS::M16BITS;
@@ -735,6 +740,7 @@ class MPU9250_ {
     }
 
     void collect_mag_data_to(float* m_bias, float* m_scale) {
+        if (setting.skip_mag) return;
         if (b_verbose)
             Serial.println("Mag Calibration: Wave device in a figure eight until done!");
         delay(4000);
