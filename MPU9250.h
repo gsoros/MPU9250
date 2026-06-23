@@ -327,9 +327,12 @@ class MPU9250_ {
         return self_test_impl();
     }
 
-    // Enable wake-on-motion and go to sleep
-    // TODO make params configurable, use named register values
-    void enableWomSleep() {
+    /*
+     * Enable wake-on-motion and go to sleep
+     * threshold: set motion threshold
+     * frequency: set frequency of wake-up
+     */
+    void enableWomSleep(uint8_t threshold = 64, uint8_t frquency = 6) {
         write_byte(mpu_i2c_addr, PWR_MGMT_1, 0x80);  // Clear registers
         delay(10);
         write_byte(mpu_i2c_addr, PWR_MGMT_2, 0x07);  // Enable accelerometer, disable gyro
@@ -340,9 +343,9 @@ class MPU9250_ {
         delay(10);
         write_byte(mpu_i2c_addr, MOT_DETECT_CTRL, 0xC0);  // Enable Accel Hardware Intelligence
         delay(10);
-        write_byte(mpu_i2c_addr, WOM_THR, 0x40);  // Set Motion Threshold
+        write_byte(mpu_i2c_addr, WOM_THR, threshold);  // Set Motion Threshold
         delay(10);
-        write_byte(mpu_i2c_addr, LP_ACCEL_ODR, 6);  // Set Frequency of Wake-up
+        write_byte(mpu_i2c_addr, LP_ACCEL_ODR, frequency);  // Set Frequency of Wake-up
         delay(10);
         write_byte(mpu_i2c_addr, PWR_MGMT_1, 0x20);  // Enable Cycle Mode (Accel Low Power Mode)
         delay(10);
