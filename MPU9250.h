@@ -332,7 +332,7 @@ class MPU9250_ {
      * threshold: set motion threshold
      * frequency: set frequency of wake-up
      */
-    void enableWomSleep(uint8_t threshold = 64, uint8_t frquency = 6) {
+    void enableWomSleep(uint8_t threshold = 64, uint8_t frequency = 6) {
         write_byte(mpu_i2c_addr, PWR_MGMT_1, 0x80);  // Clear registers
         delay(10);
         write_byte(mpu_i2c_addr, PWR_MGMT_2, 0x07);  // Enable accelerometer, disable gyro
